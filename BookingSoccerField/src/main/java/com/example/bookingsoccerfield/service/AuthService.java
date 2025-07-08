@@ -2,12 +2,17 @@ package com.example.bookingsoccerfield.service;
 
 import com.example.bookingsoccerfield.models.dto.AuthRequest;
 import com.example.bookingsoccerfield.models.dto.AuthResponse;
+import com.example.bookingsoccerfield.models.entity.PasswordResetToken;
 import com.example.bookingsoccerfield.models.entity.User;
+import com.example.bookingsoccerfield.repository.PasswordResetTokenRepository;
 import com.example.bookingsoccerfield.repository.UserRepository;
 import com.example.bookingsoccerfield.config.security.JwtService;
 import com.example.bookingsoccerfield.exception.AuthException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -15,10 +20,15 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    private final PasswordResetTokenRepository tokenRepository;
+    private final EmailService emailService;
+
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, PasswordResetTokenRepository tokenRepository, EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.tokenRepository = tokenRepository;
+        this.emailService = emailService;
     }
 
     public AuthResponse login(AuthRequest request) {
@@ -61,4 +71,37 @@ public class AuthService {
         return new AuthRequest(user.getEmail(), user.getPassword(), user.getName(),user.getPhone(),"Dang ki thanh cong");
 
     }
+    public void forgotPassword(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AuthException("Email không tồn tại"));
+
+        String token = UUID.randomUUID().toString();
+        LocalDateTime expiry = LocalDateTime.now().plusMinutes(15);
+
+        PasswordResetToken resetToken = new PasswordResetToken();
+        resetToken.setEmail(email);
+        resetToken.setToken(token);
+        resetToken.setExpiryDate(expiry);
+        tokenRepository.save(resetToken);
+
+        // Gửi email
+        emailService.sendPasswordResetEmail(email, token);
+    }
+
+    public void resetPassword(String token, String newPassword) {
+        PasswordResetToken resetToken = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new AuthException("Token không hợp lệ"));
+
+        if (resetToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new AuthException("Token đã hết hạn");
+        }
+
+        User user = userRepository.findByEmail(resetToken.getEmail())
+                .orElseThrow(() -> new AuthException("Người dùng không tồn tại"));
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        tokenRepository.delete(resetToken);
+    }
+
 }
