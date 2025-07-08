@@ -39,11 +39,11 @@ public class AuthService {
             throw new AuthException("Invalid credentials");
         }
 
-        String token = jwtService.generateToken(user.getEmail());
-        return new AuthResponse(token);
+        //String token = jwtService.generateToken(user.getEmail());
+        return new AuthResponse("Đăng nhập thành công");
     }
 
-    public AuthRequest register(AuthRequest request) {
+    public AuthResponse register(AuthRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new AuthException("Email already exists");
         }
@@ -67,8 +67,9 @@ public class AuthService {
         user.setPhone(request.getPhone());
         userRepository.save(user);
 
-//        String token = jwtService.generateToken(user.getEmail());
-        return new AuthRequest(user.getEmail(), user.getPassword(), user.getName(),user.getPhone(),"Dang ki thanh cong");
+        //String token = jwtService.generateToken(user.getEmail());
+        return new AuthResponse("Đăng kí thành công");
+        //return new AuthRequest(user.getEmail(), user.getPassword(), user.getName(),user.getPhone(),"Dang ki thanh cong");
 
     }
     public void forgotPassword(String email) {

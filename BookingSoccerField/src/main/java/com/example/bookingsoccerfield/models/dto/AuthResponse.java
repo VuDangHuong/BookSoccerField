@@ -4,11 +4,11 @@ import lombok.Data;
 
 @Data
 public class AuthResponse {
-    private String token;
+    //private String token;
+    private String message;
 
-
-    public AuthResponse(String token) {
-        this.token = token;
-
+    public AuthResponse(String message) {
+        //this.token = token;
+        this.message = message;
     }
 }
