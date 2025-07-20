@@ -34,13 +34,15 @@ public class AuthService {
     public AuthResponse login(AuthRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AuthException("User not found"));
-
+        if (!user.isEnabled()) {
+            throw new AuthException("Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.");
+        }
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new AuthException("Invalid credentials");
         }
 
-        //String token = jwtService.generateToken(user.getEmail());
-        return new AuthResponse("Đăng nhập thành công");
+        String token = jwtService.generateToken(user.getEmail());
+        return new AuthResponse(token,"Đăng nhập thành công");
     }
 
     public AuthResponse register(AuthRequest request) {
@@ -67,8 +69,8 @@ public class AuthService {
         user.setPhone(request.getPhone());
         userRepository.save(user);
 
-        //String token = jwtService.generateToken(user.getEmail());
-        return new AuthResponse("Đăng kí thành công");
+        String token = jwtService.generateToken(user.getEmail());
+        return new AuthResponse(token,"Đăng kí thành công");
         //return new AuthRequest(user.getEmail(), user.getPassword(), user.getName(),user.getPhone(),"Dang ki thanh cong");
 
     }

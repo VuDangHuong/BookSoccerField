@@ -16,18 +16,41 @@ async function handleLogin(event) {
 
     if (response.ok) {
       const data = await response.json();
-      alert('Login success!');
       localStorage.setItem('token', data.token);
-      // window.location.href = "/dashboard.html"; // Chuyển hướng nếu muốn
+
+      // ✅ Gọi API /me để lấy thông tin người dùng
+      const userInfoRes = await fetch('http://localhost:8080/api/users/me', {
+        headers: {
+          'Authorization': `Bearer ${data.token}`
+        }
+      });
+
+      if (!userInfoRes.ok) {
+        alert('Không lấy được thông tin người dùng!');
+        return;
+      }
+
+      const user = await userInfoRes.json();
+
+      alert(`Đăng nhập thành công! Xin chào ${user.name}`);
+
+      // ✅ Điều hướng theo vai trò
+      if (user.role === 'ADMIN') {
+        window.location.href = '/admin/dashboard.html';
+      } else {
+        window.location.href = 'index.html'; // Trang chính của người dùng thường
+      }
+
     } else {
       const errorData = await response.json();
-      alert('Login failed: ' + (errorData.message || 'Invalid credentials'));
+      alert('Đăng nhập thất bại: ' + (errorData.message || 'Sai thông tin'));
     }
   } catch (error) {
     console.error('Login Error:', error);
-    alert('Something went wrong. Please try again.');
+    alert('Lỗi hệ thống. Vui lòng thử lại.');
   }
 }
+
 
 // Hàm xử lý register (nếu cần dùng sau này)
 async function handleRegister(event) {

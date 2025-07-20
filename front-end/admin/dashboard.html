@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Trang quản trị hệ thống</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+
+    .nav-pills .nav-link.active {
+      background-color: #0d6efd;
+    }
+
+    .sidebar {
+      min-width: 220px;
+    }
+
+    .tab-content>.tab-pane {
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="text-primary">🎯 Trang quản trị hệ thống</h2>
+      <div>
+        <span class="me-3 text-muted" id="adminName">Xin chào, Admin</span>
+        <button class="btn btn-outline-danger btn-sm" onclick="logout()">Đăng xuất</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- Sidebar menu -->
+      <div class="col-md-3 sidebar">
+        <div class="nav flex-column nav-pills" id="admin-tab" role="tablist" aria-orientation="vertical">
+          <button class="nav-link active" id="overview-tab" data-bs-toggle="pill" data-bs-target="#overview"
+            type="button">📊 Tổng quan</button>
+          <button class="nav-link" id="users-tab" data-bs-toggle="pill" data-bs-target="#users" type="button">👤 Quản lý
+            người dùng</button>
+          <button class="nav-link" id="fields-tab" data-bs-toggle="pill" data-bs-target="#fields" type="button">🏟️ Quản
+            lý sân bóng</button>
+          <button class="nav-link" id="bookings-tab" data-bs-toggle="pill" data-bs-target="#bookings" type="button">📅
+            Quản lý đặt lịch</button>
+          <button class="nav-link" id="payments-tab" data-bs-toggle="pill" data-bs-target="#payments" type="button">💰
+            Quản lý thanh toán</button>
+          <button class="nav-link" id="settings-tab" data-bs-toggle="pill" data-bs-target="#settings" type="button">⚙️
+            Cài đặt</button>
+        </div>
+      </div>
+
+      <!-- ✅ Đúng: vùng nội dung -->
+      <div class="col-md-9">
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="overview" role="tabpanel">
+            <div id="overviewContent">Đang tải...</div>
+          </div>
+          <div class="tab-pane fade" id="users" role="tabpanel">
+            <div id="usersContent">Đang tải...</div>
+          </div>
+          <div class="tab-pane fade" id="fields" role="tabpanel">
+            <div id="fieldsContent">Đang tải...</div>
+          </div>
+          <div class="tab-pane fade" id="bookings" role="tabpanel">
+            <div id="bookingsContent">Đang tải...</div>
+          </div>
+          <div class="tab-pane fade" id="payments" role="tabpanel">
+            <div id="paymentsContent">Đang tải...</div>
+          </div>
+          <div class="tab-pane fade" id="settings" role="tabpanel">
+            <div id="settingsContent">Đang tải...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Tab content -->
+
+  </div>
+  </div>
+
+  <!-- Script -->
+  <script>
+    async function loadAdminInfo() {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        window.location.href = "/pages/login.html";
+        return;
+      }
+
+      const res = await fetch("http://localhost:8080/api/admin/users/me", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!res.ok) {
+        alert("Phiên đăng nhập đã hết hạn hoặc bạn không có quyền.");
+        window.location.href = "/pages/login.html";
+        return;
+      }
+
+      const user = await res.json();
+      if (user.role !== "ADMIN") {
+        alert("Bạn không phải admin.");
+        window.location.href = "/";
+        return;
+      }
+
+      document.getElementById("adminName").innerText = `Xin chào, ${user.name}`;
+    }
+
+    function logout() {
+      localStorage.removeItem("token");
+      window.location.href = "/pages/login.html";
+    }
+    // Tải thông tin admin khi trang được tải
+    const tabMap = {
+      //overview: 'overview/page.html',
+      users: 'users/page.html',
+      //fields: 'fields/page.html',
+      //bookings: 'bookings/page.html',
+      //payments: 'payments/page.html',
+      //settings: 'settings/page.html'
+    };
+
+   async function loadTabContent(tabId) {
+  const path = tabMap[tabId];
+  const targetDiv = document.getElementById(tabId + "Content");
+  if (!path || !targetDiv) return;
+
+  try {
+    const res = await fetch(path);
+    const html = await res.text();
+    targetDiv.innerHTML = html;
+
+    // ✅ Load thêm file JS nếu có
+    const script = document.createElement("script");
+    script.src = path.replace(".html", ".js");
+    document.body.appendChild(script);
+
+  } catch (err) {
+    targetDiv.innerHTML = `<div class="text-danger">Không thể tải dữ liệu.</div>`;
+  }
+}
+
+
+    // Tự động tải khi chuyển tab
+    document.addEventListener("DOMContentLoaded", () => {
+      document.querySelectorAll('.nav-link').forEach(btn => {
+        btn.addEventListener("click", () => {
+          const tabId = btn.getAttribute("data-bs-target").replace("#", "");
+          loadTabContent(tabId);
+        });
+      });
+
+      // Tải tab mặc định (overview)
+      loadTabContent("overview");
+    });
+  
+  </script>
+</body>
+
+</html>
